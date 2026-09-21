@@ -57,6 +57,10 @@ export default function CheckoutPage() {
       setError(t('checkout.terms'));
       return;
     }
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      setError(t('checkout.required_fields'));
+      return;
+    }
     setProcessing(true);
     setError('');
 
@@ -64,7 +68,10 @@ export default function CheckoutPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          items,
+          buyerInfo: { firstName, lastName, email, phone },
+        }),
       });
 
       if (res.ok) {

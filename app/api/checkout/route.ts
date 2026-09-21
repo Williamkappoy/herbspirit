@@ -8,9 +8,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const { items } = await request.json();
+  const { items, buyerInfo } = await request.json();
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'empty_cart' }, { status: 400 });
+  }
+
+  // Update user profile with buyer info from checkout form
+  const participantName = buyerInfo?.firstName || buyerInfo?.lastName
+    ? `${buyerInfo.firstName || ''} ${buyerInfo.lastName || ''}`.trim()
+    : `${user.firstName || ''} ${user.lastName || ''}`.trim() || null;
+
+  if (buyerInfo) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        firstName: buyerInfo.firstName || user.firstName,
+        lastName: buyerInfo.lastName || user.lastName,
+      },
+    });
+
+    // Update or create buyer profile with phone
+    if (buyerInfo.phone) {
+      await prisma.buyerProfile.upsert({
+        where: { userId: user.id },
+        update: { phone: buyerInfo.phone },
+        create: { userId: user.id, phone: buyerInfo.phone },
+      });
+    }
   }
 
   // Validate items and calculate total
@@ -94,7 +118,7 @@ export async function POST(request: Request) {
           ticketTypeId: vi.tt.id,
           eventId: vi.tt.eventId,
           orderId: order.id,
-          participantName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || null,
+          participantName,
           status: 'PAID',
         },
       });

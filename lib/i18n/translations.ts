@@ -105,6 +105,7 @@ export const translations: Record<string, Record<Lang, string>> = {
   'checkout.back_to_tickets': { fr: 'Voir mes billets', nl: 'Mijn tickets bekijken', en: 'View my tickets' },
   'checkout.order_number': { fr: 'Numéro de commande', nl: 'Bestelnummer', en: 'Order number' },
   'checkout.commission_info': { fr: 'Commission Kapibana\'s Tickets (5%)', nl: 'Commissie Kapibana\'s Tickets (5%)', en: 'Kapibana\'s Tickets commission (5%)' },
+  'checkout.required_fields': { fr: 'Veuillez remplir tous les champs obligatoires', nl: 'Vul alle verplichte velden in', en: 'Please fill in all required fields' },
 
   // Auth
   'auth.signin_title': { fr: 'Connexion', nl: 'Inloggen', en: 'Sign in' },
@@ -138,6 +139,7 @@ export const translations: Record<string, Record<Lang, string>> = {
   'buyer.order_status': { fr: 'Statut', nl: 'Status', en: 'Status' },
   'buyer.no_tickets': { fr: 'Aucun billet pour le moment', nl: 'Nog geen tickets', en: 'No tickets yet' },
   'buyer.no_orders': { fr: 'Aucune commande pour le moment', nl: 'Nog geen bestellingen', en: 'No orders yet' },
+  'buyer.download_ticket': { fr: 'Télécharger', nl: 'Downloaden', en: 'Download' },
 
   // Organizer dashboard
   'organizer.dashboard': { fr: 'Espace organisateur', nl: 'Organisator ruimte', en: 'Organizer dashboard' },
