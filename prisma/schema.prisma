@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VISITOR
+  BUYER
+  ORGANIZER
+  ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PUBLISHED
+  SUSPENDED
+  COMPLETED
+  ARCHIVED
+}
+
+enum TicketStatus {
+  RESERVED
+  PAID
+  VALID
+  USED
+  CANCELLED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id               String             @id @default(cuid())
+  email            String             @unique
+  password         String
+  firstName       String?
+  lastName        String?
+  role             Role               @default(VISITOR)
+  buyerProfile     BuyerProfile?
+  organizerProfile OrganizerProfile?
+  orders           Order[]
+  notifications    Notification[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model BuyerProfile {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @unique
+  phone       String?
+  city        String?
+  preferences Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OrganizerProfile {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @unique
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  website     String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String   @default("Belgique")
+  verified    Boolean  @default(false)
+  events      Event[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EventCategory {
+  id      String   @id @default(cuid())
+  name    String
+  slug    String   @unique
+  icon    String?
+  color   String?
+  events  Event[]
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String
+  image       String?
+  gallery     String[]
+  category    EventCategory? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  organizer   OrganizerProfile @relation(fields: [organizerId], references: [id])
+  organizerId String
+  venue       Venue?        @relation(fields: [venueId], references: [id])
+  venueId     String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      EventStatus   @default(DRAFT)
+  featured    Boolean       @default(false)
+  ticketTypes TicketType[]
+  tickets     Ticket[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Venue {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  postalCode String?
+  city      String
+  country   String   @default("Belgique")
+  events    Event[]
+  createdAt DateTime @default(now())
+}
+
+model TicketType {
+  id            String      @id @default(cuid())
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+  name          String
+  description   String?
+  price         Decimal     @db.Decimal(10, 2)
+  quantity      Int
+  sold          Int         @default(0)
+  saleStartDate DateTime?
+  saleEndDate   DateTime?
+  maxPerOrder   Int         @default(10)
+  orderItems    OrderItem[]
+  tickets       Ticket[]
+  createdAt     DateTime    @default(now())
+}
+
+model Ticket {
+  id            String       @id @default(cuid())
+  uniqueCode    String       @unique
+  ticketType    TicketType   @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId  String
+  event         Event        @relation(fields: [eventId], references: [id])
+  eventId       String
+  order         Order?       @relation(fields: [orderId], references: [id])
+  orderId       String?
+  participantName String?
+  status        TicketStatus @default(RESERVED)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Order {
+  id          String       @id @default(cuid())
+  orderNumber String       @unique
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+  items       OrderItem[]
+  tickets     Ticket[]
+  totalAmount Decimal      @db.Decimal(10, 2)
+  fees        Decimal      @db.Decimal(10, 2) @default(0)
+  status      OrderStatus  @default(PENDING)
+  payment     Payment?
+  commission   Commission?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId String
+  quantity     Int
+  unitPrice    Decimal  @db.Decimal(10, 2)
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String        @unique
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(PENDING)
+  method    String       @default("card")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Commission {
+  id               String   @id @default(cuid())
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId          String   @unique
+  rate             Decimal  @db.Decimal(5, 2) @default(5)
+  grossAmount      Decimal  @db.Decimal(10, 2)
+  commissionAmount Decimal  @db.Decimal(10, 2)
+  organizerAmount  Decimal  @db.Decimal(10, 2)
+  currency         String   @default("EUR")
+  createdAt        DateTime @default(now())
+}
+
+model Refund {
+  id        String   @id @default(cuid())
+  paymentId String
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
